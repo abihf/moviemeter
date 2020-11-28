@@ -1,2 +1,5 @@
 .vercel
+node_modules
+build
 cmd/__debug_bin
+.eslintcache
