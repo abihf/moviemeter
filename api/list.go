@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/karrick/goswarm"
+	loader "github.com/abihf/cache-loader"
 )
 
 var imdbIDExtractor = regexp.MustCompile("tt\\d+")
@@ -23,14 +23,7 @@ var httpClient = http.Client{
 	Timeout:   60 * time.Second,
 }
 
-var cache, _ = goswarm.NewSimple(&goswarm.Config{
-	GoodStaleDuration:  time.Minute,
-	GoodExpiryDuration: 6 * time.Hour,
-	BadStaleDuration:   time.Minute,
-	BadExpiryDuration:  5 * time.Minute,
-	GCPeriodicity:      time.Hour,
-	Lookup:             fetchList,
-})
+var cache = loader.NewLRU(fetchList, 6*time.Hour, 1000)
 
 type movieItem struct {
 	ID     string  `json:"imdb_id"`
@@ -124,7 +117,7 @@ func listMovies(filter url.Values) (movieList, error) {
 		maxItem = newMaxItem
 	}
 
-	listIface, err := cache.Query(listName)
+	listIface, err := cache.Get(listName)
 	if err != nil {
 		return nil, err
 	}
@@ -144,9 +137,10 @@ func listMovies(filter url.Values) (movieList, error) {
 	return newList[0:size], nil
 }
 
-func fetchList(listName string) (interface{}, error) {
+func fetchList(key interface{}) (interface{}, error) {
 	isUserList := false
 	var url string
+	listName := key.(string)
 	if listName[0:2] == "ls" {
 		isUserList = true
 		url = fmt.Sprintf("https://www.imdb.com/list/%s/?mode=simple", listName)
