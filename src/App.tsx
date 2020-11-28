@@ -1,32 +1,31 @@
-import React, { useEffect, useReducer, useState } from "react";
 import {
-  createStyles,
-  makeStyles,
-  Theme,
-  CssBaseline,
+  CircularProgress,
   Container,
-  Paper,
-  TextField,
-  InputAdornment,
+  createStyles,
+  CssBaseline,
   Grid,
-  Link,
-  TableContainer,
+  InputAdornment,
+  makeStyles,
+  Paper,
   Table,
+  TableBody,
+  TableCell,
+  TableContainer,
   TableHead,
   TableRow,
-  TableCell,
-  TableBody,
-  CircularProgress,
+  TextField,
+  Theme,
 } from "@material-ui/core";
 import AppBar from "@material-ui/core/AppBar";
+import IconButton from "@material-ui/core/IconButton";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
-import IconButton from "@material-ui/core/IconButton";
 import GitHubIcon from "@material-ui/icons/GitHub";
 import PublicIcon from "@material-ui/icons/Public";
 import { Autocomplete } from "@material-ui/lab";
-import querystring from "querystring";
 import { createBrowserHistory } from "history";
+import querystring from "querystring";
+import React, { useEffect, useReducer, useState } from "react";
 
 const browserHistory = createBrowserHistory();
 
@@ -149,7 +148,7 @@ export default function App() {
     return () => ac.abort();
   }, [debouncedFilter]);
 
-  const baseUrl = document.location.protocol + "://" + document.location.host;
+  const baseUrl = document.location.protocol + "//" + document.location.host;
   const url = "/list.json?" + encodeQuery(filter);
   return (
     <div className={classes.root}>
