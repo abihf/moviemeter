@@ -1,0 +1,9 @@
+{
+  "name": "@abihf/moviemeter",
+  "version": "1.0.0",
+  "description": "IMDb movie meter as API",
+  "main": "index.js",
+  "repository": "https://github.com/abihf/moviemeter.git",
+  "author": "Abi Hafshin",
+  "license": "MIT"
+}

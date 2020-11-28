@@ -1,0 +1,4 @@
+{
+  "public": true,
+  "routes": [{ "src": "/list.json", "dest": "/api/list" }]
+}
