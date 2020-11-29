@@ -28,6 +28,7 @@ import querystring from "querystring";
 import React, { useEffect, useReducer, useState } from "react";
 
 const browserHistory = createBrowserHistory();
+const numberFormatter = new Intl.NumberFormat();
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -39,6 +40,7 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     container: {
       marginTop: theme.spacing(4),
+      marginBottom: theme.spacing(4),
     },
     paper: {
       padding: theme.spacing(1),
@@ -64,7 +66,7 @@ const presets: NamedFilter[] = [
     name: "Popular",
     list: "popular",
     year: -1,
-    rating: 5.0,
+    rating: 6.0,
     votes: 50000,
     max: 20,
   },
@@ -75,6 +77,14 @@ const presets: NamedFilter[] = [
     rating: 0,
     votes: 0,
     max: 10,
+  },
+  {
+    name: "Marvel Movies Since 2019",
+    list: "ls027181777",
+    year: 2019,
+    rating: 0,
+    votes: 0,
+    max: 0,
   },
 ];
 
@@ -195,6 +205,7 @@ export default function App() {
                 const encoded = encodeQuery(preset);
                 return (
                   <li key={encoded}>
+                    {preset.name}{" "}
                     <a
                       href={"/?" + encoded}
                       onClick={(e) => {
@@ -282,6 +293,9 @@ export default function App() {
               </Grid>
               <Grid item xs={6} md={2}>
                 {isFetching && <CircularProgress />}
+                {error && (
+                  <Typography color="error">{error.message}</Typography>
+                )}
               </Grid>
             </Grid>
           </Paper>
@@ -299,13 +313,21 @@ export default function App() {
                 {movies.map((movie) => (
                   <TableRow key={movie.imdb_id}>
                     <TableCell component="th" scope="row">
-                      <a href={`https://www.imdb.com/title/${movie.imdb_id}/`}>
+                      <a
+                        href={`https://www.imdb.com/title/${movie.imdb_id}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         {movie.title}
                       </a>
                     </TableCell>
                     <TableCell align="center">{movie.year}</TableCell>
-                    <TableCell align="center">{movie.rating}</TableCell>
-                    <TableCell align="center">{movie.votes}</TableCell>
+                    <TableCell align="center">
+                      {numberFormatter.format(movie.rating)}
+                    </TableCell>
+                    <TableCell align="center">
+                      {numberFormatter.format(movie.votes)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
