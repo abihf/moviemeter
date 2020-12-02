@@ -3,8 +3,10 @@ import {
   Container,
   createStyles,
   CssBaseline,
+  Divider,
   Grid,
   InputAdornment,
+  Link,
   makeStyles,
   Paper,
   Table,
@@ -25,7 +27,7 @@ import PublicIcon from "@material-ui/icons/Public";
 import { Autocomplete } from "@material-ui/lab";
 import { createBrowserHistory } from "history";
 import querystring from "querystring";
-import React, { useEffect, useReducer, useState } from "react";
+import React, { useEffect, useMemo, useReducer, useState } from "react";
 
 const browserHistory = createBrowserHistory();
 const numberFormatter = new Intl.NumberFormat();
@@ -141,6 +143,11 @@ export default function App() {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<Error | undefined>();
 
+  const isListNameValid = useMemo(
+    () => (debouncedFilter.list || "").match(/^(popular|top|ls\d+|)$/),
+    [debouncedFilter.list]
+  );
+
   useEffect(() => {
     if (!debouncedFilter.fromUrl)
       browserHistory.push("/?" + encodeQuery(debouncedFilter));
@@ -188,6 +195,7 @@ export default function App() {
               id="url"
               value={baseUrl + url}
               fullWidth
+              variant="outlined"
               InputProps={{
                 readOnly: true,
                 startAdornment: (
@@ -199,26 +207,6 @@ export default function App() {
               }}
               label="URL"
             />
-            Presets:
-            <ul>
-              {presets.map((preset) => {
-                const encoded = encodeQuery(preset);
-                return (
-                  <li key={encoded}>
-                    {preset.name}{" "}
-                    <a
-                      href={"/?" + encoded}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setFilter(preset);
-                      }}
-                    >
-                      {baseUrl}/list.json?{encoded}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
           </Paper>
           <Paper className={classes.paper}>
             <Typography variant="subtitle1">Customize</Typography>
@@ -234,6 +222,7 @@ export default function App() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
+                      error={!isListNameValid}
                       onChange={(e) =>
                         setFilter({ list: e.currentTarget.value })
                       }
@@ -259,10 +248,11 @@ export default function App() {
                 <TextField
                   type="number"
                   label="Rating"
-                  value={filter.rating}
+                  value={filter.rating || 0.0}
                   onChange={(e) =>
                     setFilter({ rating: parseFloat(e.currentTarget.value) })
                   }
+                  inputProps={{ min: 0.0, max: 10.0 }}
                   margin="normal"
                   fullWidth
                 />
@@ -271,10 +261,11 @@ export default function App() {
                 <TextField
                   type="number"
                   label="Votes"
-                  value={filter.votes}
+                  value={filter.votes || 0}
                   onChange={(e) =>
                     setFilter({ votes: parseInt(e.currentTarget.value, 10) })
                   }
+                  inputProps={{ min: 0 }}
                   margin="normal"
                   fullWidth
                 />
@@ -283,10 +274,11 @@ export default function App() {
                 <TextField
                   type="number"
                   label="Max Item"
-                  value={filter.max}
+                  value={filter.max || 0}
                   onChange={(e) =>
                     setFilter({ max: parseInt(e.currentTarget.value, 10) })
                   }
+                  inputProps={{ min: 0 }}
                   margin="normal"
                   fullWidth
                 />
@@ -298,6 +290,27 @@ export default function App() {
                 )}
               </Grid>
             </Grid>
+            <Divider />
+            <Typography variant="subtitle1">Presets</Typography>
+            <ul>
+              {presets.map((preset) => {
+                const encoded = encodeQuery(preset);
+                return (
+                  <li key={encoded}>
+                    <b>{preset.name}</b>{" "}
+                    <Link
+                      href={"/?" + encoded}
+                      onClick={(e: any) => {
+                        e.preventDefault();
+                        setFilter(preset);
+                      }}
+                    >
+                      {baseUrl}/list.json?{encoded}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </Paper>
           <TableContainer component={Paper}>
             <Table aria-label="Preview">
