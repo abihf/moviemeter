@@ -13,6 +13,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	loader "github.com/abihf/cache-loader"
+	"github.com/go-http-utils/etag"
 )
 
 var imdbIDExtractor = regexp.MustCompile("tt\\d+")
@@ -37,6 +38,10 @@ type movieItem struct {
 type movieList []*movieItem
 
 func Handler(w http.ResponseWriter, r *http.Request) {
+	etag.Handler(http.HandlerFunc(handleList), false).ServeHTTP(w, r)
+}
+
+func handleList(w http.ResponseWriter, r *http.Request) {
 	list, err := listMovies(r.URL.Query())
 	if err != nil {
 		w.WriteHeader(500)
@@ -44,6 +49,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("content-type", "application/json")
+	w.Header().Set("cache-control", "public, stale-while-revalidate=3600, max-age=3600")
 	json.NewEncoder(w).Encode(list)
 }
 
