@@ -263,13 +263,3 @@ func parseUserList(doc *goquery.Document) (movieList, error) {
 
 	return list, nil
 }
-
-type customAgentTransport struct {
-	http.Transport
-	agent string
-}
-
-func (t *customAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	r.Header.Set("user-agent", t.agent)
-	return t.Transport.RoundTrip(r)
-}

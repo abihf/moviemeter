@@ -1,13 +1,17 @@
+import GitHubIcon from "@mui/icons-material/GitHub";
+import PublicIcon from "@mui/icons-material/Public";
 import {
+  AppBar,
+  Autocomplete,
+  Box,
   CircularProgress,
   Container,
-  createStyles,
   CssBaseline,
   Divider,
   Grid,
+  IconButton,
   InputAdornment,
   Link,
-  makeStyles,
   Paper,
   Table,
   TableBody,
@@ -16,40 +20,14 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Theme,
-} from "@material-ui/core";
-import AppBar from "@material-ui/core/AppBar";
-import IconButton from "@material-ui/core/IconButton";
-import Toolbar from "@material-ui/core/Toolbar";
-import Typography from "@material-ui/core/Typography";
-import GitHubIcon from "@material-ui/icons/GitHub";
-import PublicIcon from "@material-ui/icons/Public";
-import { Autocomplete } from "@material-ui/lab";
+  Toolbar,
+  Typography,
+} from "@mui/material";
 import { createBrowserHistory } from "history";
-import querystring from "querystring";
-import React, { useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 
 const browserHistory = createBrowserHistory();
 const numberFormatter = new Intl.NumberFormat();
-
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      flexGrow: 1,
-    },
-    title: {
-      flexGrow: 1,
-    },
-    container: {
-      marginTop: theme.spacing(4),
-      marginBottom: theme.spacing(4),
-    },
-    paper: {
-      padding: theme.spacing(1),
-      marginBottom: theme.spacing(2),
-    },
-  })
-);
 
 type Filter = {
   list: string;
@@ -98,28 +76,23 @@ type MovieItem = {
   votes: number;
 };
 
-const reducer: React.Reducer<Partial<Filter>, Partial<Filter>> = (
-  prev,
-  filter
-) => {
+const reducer: React.Reducer<Partial<Filter>, Partial<Filter>> = (prev, filter) => {
   return { ...prev, fromUrl: false, ...filter };
 };
 function parseFilterFromQuery(url?: string): Partial<Filter> {
   const usedUrl = url || browserHistory.location.search;
-  const parsed = querystring.parse(usedUrl.substr(1)) as Record<string, string>;
+  const parsed = new URLSearchParams(usedUrl.substring(1));
   return {
-    list: parsed.list || "",
-    year: parsed.year ? parseInt(parsed.year, 10) : 0,
-    rating: parsed.rating ? parseFloat(parsed.rating) : 0,
-    votes: parsed.votes ? parseInt(parsed.votes, 10) : 0,
-    max: parsed.max ? parseInt(parsed.max, 10) : 0,
+    list: parsed.get("list") || "",
+    year: parseInt(parsed.get("year") || "0", 10),
+    rating: parseFloat(parsed.get("rating") || "0"),
+    votes: parseInt(parsed.get("votes") || "0", 10),
+    max: parseInt(parsed.get("max") || "0", 10),
     fromUrl: true,
   };
 }
 
-function encodeQuery(
-  obj: Record<string, string | number | boolean | undefined>
-): string {
+function encodeQuery(obj: Record<string, string | number | boolean | undefined>): string {
   const encoded = [];
   for (const [key, value] of Object.entries(obj)) {
     if (value && !["name", "fromUrl"].includes(key))
@@ -129,12 +102,10 @@ function encodeQuery(
 }
 
 export default function App() {
-  const classes = useStyles();
   const [filter, setFilter] = useReducer(reducer, parseFilterFromQuery());
   useEffect(() => {
     return browserHistory.listen((update) => {
-      if (update.action === "POP")
-        setFilter(parseFilterFromQuery(update.location.search));
+      if (update.action === "POP") setFilter(parseFilterFromQuery(update.location.search));
     });
   }, []);
 
@@ -149,8 +120,7 @@ export default function App() {
   );
 
   useEffect(() => {
-    if (!debouncedFilter.fromUrl)
-      browserHistory.push("/?" + encodeQuery(debouncedFilter));
+    if (!debouncedFilter.fromUrl) browserHistory.push("/?" + encodeQuery(debouncedFilter));
 
     setIsFetching(true);
     const ac = new AbortController();
@@ -168,11 +138,11 @@ export default function App() {
   const baseUrl = document.location.protocol + "//" + document.location.host;
   const url = "/list.json?" + encodeQuery(filter);
   return (
-    <div className={classes.root}>
+    <Box sx={{ flexGrow: 1 }}>
       <CssBaseline />
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" className={classes.title}>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Moviemeter
           </Typography>
           <div>
@@ -188,9 +158,9 @@ export default function App() {
           </div>
         </Toolbar>
       </AppBar>
-      <Container className={classes.container}>
+      <Container sx={(theme) => ({ marginTop: theme.spacing(4), marginBottom: theme.spacing(4) })}>
         <form noValidate autoComplete="off">
-          <Paper className={classes.paper}>
+          <Paper sx={(theme) => ({ padding: theme.spacing(1), marginBottom: theme.spacing(2) })}>
             <TextField
               id="url"
               value={baseUrl + url}
@@ -208,9 +178,9 @@ export default function App() {
               label="URL"
             />
           </Paper>
-          <Paper className={classes.paper}>
+          <Paper sx={(theme) => ({ padding: theme.spacing(1), marginBottom: theme.spacing(2) })}>
             <Typography variant="subtitle1">Customize</Typography>
-            <Grid container className={classes.root} spacing={2}>
+            <Grid container sx={{ flexGrow: 1 }} spacing={2}>
               <Grid item xs={6} md={2}>
                 <Autocomplete
                   id="list-name"
@@ -223,9 +193,7 @@ export default function App() {
                     <TextField
                       {...params}
                       error={!isListNameValid}
-                      onChange={(e) =>
-                        setFilter({ list: e.currentTarget.value })
-                      }
+                      onChange={(e) => setFilter({ list: e.currentTarget.value })}
                       label="List"
                       margin="normal"
                     />
@@ -237,9 +205,7 @@ export default function App() {
                   type="number"
                   label="Year"
                   value={filter.year}
-                  onChange={(e) =>
-                    setFilter({ year: parseInt(e.currentTarget.value, 10) })
-                  }
+                  onChange={(e) => setFilter({ year: parseInt(e.currentTarget.value, 10) })}
                   margin="normal"
                   fullWidth
                 />
@@ -249,9 +215,7 @@ export default function App() {
                   type="number"
                   label="Rating"
                   value={filter.rating || 0.0}
-                  onChange={(e) =>
-                    setFilter({ rating: parseFloat(e.currentTarget.value) })
-                  }
+                  onChange={(e) => setFilter({ rating: parseFloat(e.currentTarget.value) })}
                   inputProps={{ min: 0.0, max: 10.0 }}
                   margin="normal"
                   fullWidth
@@ -262,9 +226,7 @@ export default function App() {
                   type="number"
                   label="Votes"
                   value={filter.votes || 0}
-                  onChange={(e) =>
-                    setFilter({ votes: parseInt(e.currentTarget.value, 10) })
-                  }
+                  onChange={(e) => setFilter({ votes: parseInt(e.currentTarget.value, 10) })}
                   inputProps={{ min: 0 }}
                   margin="normal"
                   fullWidth
@@ -275,9 +237,7 @@ export default function App() {
                   type="number"
                   label="Max Item"
                   value={filter.max || 0}
-                  onChange={(e) =>
-                    setFilter({ max: parseInt(e.currentTarget.value, 10) })
-                  }
+                  onChange={(e) => setFilter({ max: parseInt(e.currentTarget.value, 10) })}
                   inputProps={{ min: 0 }}
                   margin="normal"
                   fullWidth
@@ -285,9 +245,7 @@ export default function App() {
               </Grid>
               <Grid item xs={6} md={2}>
                 {isFetching && <CircularProgress />}
-                {error && (
-                  <Typography color="error">{error.message}</Typography>
-                )}
+                {error && <Typography color="error">{error.message}</Typography>}
               </Grid>
             </Grid>
             <Divider />
@@ -335,12 +293,8 @@ export default function App() {
                       </a>
                     </TableCell>
                     <TableCell align="center">{movie.year}</TableCell>
-                    <TableCell align="center">
-                      {numberFormatter.format(movie.rating)}
-                    </TableCell>
-                    <TableCell align="center">
-                      {numberFormatter.format(movie.votes)}
-                    </TableCell>
+                    <TableCell align="center">{numberFormatter.format(movie.rating)}</TableCell>
+                    <TableCell align="center">{numberFormatter.format(movie.votes)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -348,7 +302,7 @@ export default function App() {
           </TableContainer>
         </form>
       </Container>
-    </div>
+    </Box>
   );
 }
 
