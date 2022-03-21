@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -16,12 +17,13 @@ import (
 	"github.com/go-http-utils/etag"
 )
 
+const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+
 var imdbIDExtractor = regexp.MustCompile("tt\\d+")
 var imdbRatingParser = regexp.MustCompile("([0-9.]+) base on ([0-9,]+) ")
 
 var httpClient = http.Client{
-	Transport: &customAgentTransport{http.Transport{}, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"},
-	Timeout:   60 * time.Second,
+	Timeout: 60 * time.Second,
 }
 
 var cache = loader.NewLRU(fetchList, 6*time.Hour, 1000)
@@ -123,11 +125,10 @@ func listMovies(filter url.Values) (movieList, error) {
 		maxItem = newMaxItem
 	}
 
-	listIface, err := cache.Get(listName)
+	list, err := cache.Load(listName)
 	if err != nil {
 		return nil, err
 	}
-	list := listIface.(movieList)
 	newList := make(movieList, len(list))
 	size := 0
 	for _, item := range list {
@@ -143,10 +144,9 @@ func listMovies(filter url.Values) (movieList, error) {
 	return newList[0:size], nil
 }
 
-func fetchList(key interface{}) (interface{}, error) {
+func fetchList(ctx context.Context, listName string) (movieList, error) {
 	isUserList := false
 	var url string
-	listName := key.(string)
 	if listName[0:2] == "ls" {
 		isUserList = true
 		url = fmt.Sprintf("https://www.imdb.com/list/%s/?mode=simple", listName)
@@ -158,10 +158,18 @@ func fetchList(key interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("Invalid list name")
 	}
 
-	res, err := httpClient.Get(url)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error when requesting IMDb page: %w", err)
+	}
+	req.Header.Set("user-agent", userAgent)
+	req.Header.Add("connection", "keep-alive")
+
+	res, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("Error when fetching IMDb page: %w", err)
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("IMDb return status code %d", res.StatusCode)
@@ -178,7 +186,7 @@ func fetchList(key interface{}) (interface{}, error) {
 	return parseChartPage(doc)
 }
 
-func parseChartPage(doc *goquery.Document) (interface{}, error) {
+func parseChartPage(doc *goquery.Document) (movieList, error) {
 	rowNodes := doc.Find(".chart tbody tr")
 	list := make(movieList, rowNodes.Length())
 	rowNodes.EachWithBreak(func(i int, row *goquery.Selection) bool {
@@ -213,7 +221,7 @@ func parseChartPage(doc *goquery.Document) (interface{}, error) {
 	return list, nil
 }
 
-func parseUserList(doc *goquery.Document) (interface{}, error) {
+func parseUserList(doc *goquery.Document) (movieList, error) {
 	rowNodes := doc.Find(".lister-item")
 	list := make(movieList, rowNodes.Length())
 	rowNodes.Each(func(i int, row *goquery.Selection) {
